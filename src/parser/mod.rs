@@ -19,5 +19,5 @@ pub enum ParseError {
 
 pub fn parse_source(tokens: Vec<Token>) -> Result<Ast, ParseError> {
     println!("Tokens: {tokens:#?}");
-    unimplemented!();
+    Ok(Ast {})
 }
