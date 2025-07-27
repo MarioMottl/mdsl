@@ -116,6 +116,10 @@ pub enum Token {
     CharLiteral(char),
 
     // keywords & identifiers
+    #[token("val")]
+    Val,
+    #[token("var")]
+    Var,
     #[token("if")]
     If,
     #[token("else")]
@@ -126,20 +130,12 @@ pub enum Token {
     For,
     #[token("fn")]
     Fn,
-    #[token("let")]
-    Let,
-    #[token("const")]
-    Const,
     #[token("return")]
     Return,
     #[token("struct")]
     Struct,
     #[token("enum")]
     Enum,
-    #[token("impl")]
-    Impl,
-    #[token("trait")]
-    Trait,
     #[token("match")]
     Match,
     #[token("true")]
@@ -163,13 +159,29 @@ mod tests {
     }
 
     #[test]
-    fn test_simple_let_binding() {
-        let input = "let foo = 123;";
+    fn test_simple_var_binding() {
+        let input = "var foo = 123;";
         let tokens = lex(input);
         assert_eq!(
             tokens,
             vec![
-                Token::Let,
+                Token::Var,
+                Token::Identifier, // "foo"
+                Token::Equal,
+                Token::Integer(123),
+                Token::Semicolon,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_simple_val_binding() {
+        let input = "val foo = 123;";
+        let tokens = lex(input);
+        assert_eq!(
+            tokens,
+            vec![
+                Token::Val,
                 Token::Identifier, // "foo"
                 Token::Equal,
                 Token::Integer(123),
