@@ -1,15 +1,8 @@
+mod ast;
+
+pub use self::ast::{Ast, Type};
 use crate::token::Token;
 use anyhow::Result;
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum Type {
-    Int,
-    Float,
-    Bool,
-}
-
-#[derive(Debug)]
-pub struct Ast {}
 
 #[derive(Debug)]
 pub enum ParseError {
