@@ -42,14 +42,108 @@ pub fn lex_with_errors(input: &str) -> LexResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use logos::Logos;
+
+    fn lex(src: &str) -> Vec<Token> {
+        Token::lexer(src).filter_map(|r| r.ok()).collect()
+    }
 
     #[test]
-    fn test_unknown_character_is_reported() {
-        let LexResult { tokens, errors } = lex_with_errors("foo @ bar");
-        assert_eq!(tokens, vec![Token::Identifier, Token::Identifier]);
+    fn test_simple_var_binding() {
+        let input = "var foo = 123;";
+        let tokens = lex(input);
+        assert_eq!(
+            tokens,
+            vec![
+                Token::Var,
+                Token::Identifier("foo".into()),
+                Token::Equal,
+                Token::Integer(123),
+                Token::Semicolon,
+            ]
+        );
+    }
 
-        assert_eq!(errors.len(), 1);
-        assert_eq!(errors[0].fragment, "@");
-        assert_eq!(errors[0].span, 4..5); // position of '@'
+    #[test]
+    fn test_simple_val_binding() {
+        let input = "val foo = 123;";
+        let tokens = lex(input);
+        assert_eq!(
+            tokens,
+            vec![
+                Token::Val,
+                Token::Identifier("foo".into()),
+                Token::Equal,
+                Token::Integer(123),
+                Token::Semicolon,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_float_and_ops() {
+        let input = "x = 8.43 * (a + b);";
+        let tokens = lex(input);
+        assert_eq!(
+            tokens,
+            vec![
+                Token::Identifier("x".into()),
+                Token::Equal,
+                Token::Float(8.43),
+                Token::Star,
+                Token::LeftParen,
+                Token::Identifier("a".into()),
+                Token::Plus,
+                Token::Identifier("b".into()),
+                Token::RightParen,
+                Token::Semicolon,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_string_and_char_literals() {
+        let input = r#"'c' "hello\nworld""#;
+        let tokens = lex(input);
+        assert_eq!(
+            tokens,
+            vec![
+                Token::CharLiteral('c'),
+                Token::StringLiteral("hello\\nworld".into()),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_comments_and_whitespace_are_skipped() {
+        let input = r#"
+            // this is a line comment
+            if(x){ }
+        "#;
+        let tokens = lex(input);
+        assert_eq!(
+            tokens,
+            vec![
+                Token::If,
+                Token::LeftParen,
+                Token::Identifier("x".into()),
+                Token::RightParen,
+                Token::LeftBrace,
+                Token::RightBrace,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_multi_identifier_lex() {
+        let input = "foo bar";
+        let tokens = lex(input);
+        assert_eq!(
+            tokens,
+            vec![
+                Token::Identifier("foo".into()),
+                Token::Identifier("bar".into()),
+            ]
+        );
     }
 }

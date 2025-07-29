@@ -1,6 +1,6 @@
 use logos::Logos;
 
-#[derive(Logos, Debug, PartialEq)]
+#[derive(Logos, Clone, Debug, PartialEq)]
 // skip whitespace and comments
 #[logos(skip r"[ \t\n\f]+")]
 #[logos(skip r"//[^\n]*")]
@@ -145,102 +145,39 @@ pub enum Token {
     #[token("null")]
     Null,
 
-    #[regex(r"[a-zA-Z_][a-zA-Z0-9_]*")]
-    Identifier,
+    #[regex(r"[a-zA-Z_][a-zA-Z0-9_]*", |lex| lex.slice().to_string())]
+    Identifier(String),
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use logos::Logos;
+#[allow(unused)]
+#[derive(PartialEq, PartialOrd)]
+pub enum Precedence {
+    Lowest = 0,
+    Assignment = 1,
+    Ternary = 2,
+    Or = 3,
+    And = 4,
+    Equality = 5,
+    Comparison = 6,
+    Term = 7,
+    Factor = 8,
+    Prefix = 9,
+    Call = 10,
+    Primary = 11,
+}
 
-    fn lex(src: &str) -> Vec<Token> {
-        Token::lexer(src).filter_map(|r| r.ok()).collect()
-    }
-
-    #[test]
-    fn test_simple_var_binding() {
-        let input = "var foo = 123;";
-        let tokens = lex(input);
-        assert_eq!(
-            tokens,
-            vec![
-                Token::Var,
-                Token::Identifier, // "foo"
-                Token::Equal,
-                Token::Integer(123),
-                Token::Semicolon,
-            ]
-        );
-    }
-
-    #[test]
-    fn test_simple_val_binding() {
-        let input = "val foo = 123;";
-        let tokens = lex(input);
-        assert_eq!(
-            tokens,
-            vec![
-                Token::Val,
-                Token::Identifier, // "foo"
-                Token::Equal,
-                Token::Integer(123),
-                Token::Semicolon,
-            ]
-        );
-    }
-
-    #[test]
-    fn test_float_and_ops() {
-        let input = "x = 3.14 * (a + b);";
-        let tokens = lex(input);
-        assert_eq!(
-            tokens,
-            vec![
-                Token::Identifier,
-                Token::Equal,
-                Token::Float(3.14),
-                Token::Star,
-                Token::LeftParen,
-                Token::Identifier,
-                Token::Plus,
-                Token::Identifier,
-                Token::RightParen,
-                Token::Semicolon,
-            ]
-        );
-    }
-
-    #[test]
-    fn test_string_and_char_literals() {
-        let input = r#"'c' "hello\nworld""#;
-        let tokens = lex(input);
-        assert_eq!(
-            tokens,
-            vec![
-                Token::CharLiteral('c'),
-                Token::StringLiteral(String::from("hello\\nworld")),
-            ]
-        );
-    }
-
-    #[test]
-    fn test_comments_and_whitespace_are_skipped() {
-        let input = r#"
-            // this is a line comment
-            if(x){ }
-        "#;
-        let tokens = lex(input);
-        assert_eq!(
-            tokens,
-            vec![
-                Token::If,
-                Token::LeftParen,
-                Token::Identifier,
-                Token::RightParen,
-                Token::LeftBrace,
-                Token::RightBrace,
-            ]
-        );
+impl Token {
+    pub fn precedence(&self) -> Precedence {
+        use Token::*;
+        match self {
+            Equal | EqualEqual | BangEqual => Precedence::Equality,
+            Less | LessEqual | Greater | GreaterEqual => Precedence::Comparison,
+            Plus | Minus => Precedence::Term,
+            Star | Slash | Percent => Precedence::Factor,
+            AndAnd => Precedence::And,
+            OrOr => Precedence::Or,
+            Question => Precedence::Ternary,
+            _ => Precedence::Lowest,
+        }
     }
 }
